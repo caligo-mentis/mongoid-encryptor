@@ -74,7 +74,9 @@ module Mongoid #:nodoc:
     # @param [Hash] options
     # @return [EncryptedStrings::Cipher]
     def instantiate_cipher(cipher_class, options)
-      cipher_class.new(options.dup)
+      options = options.dup
+      options[:private_key] = self.send(options[:private_key]) if options[:private_key]
+      cipher_class.new(options)
     end
   end
 
