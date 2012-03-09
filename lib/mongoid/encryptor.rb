@@ -32,51 +32,49 @@ module Mongoid #:nodoc:
       end
     end
 
-    module InstanceMethods #:nodoc:
-      # Returns decrypted value for key.
-      #
-      # @param [String] key
-      # @return [Object]
-      def read_attribute_for_validation(key)
-        v = read_attribute(key)
-        v.try(:encrypted?) ? v.decrypt : v
+    # Returns decrypted value for key.
+    #
+    # @param [String] key
+    # @return [Object]
+    def read_attribute_for_validation(key)
+      v = read_attribute(key)
+      v.try(:encrypted?) ? v.decrypt : v
+    end
+
+    private
+
+    # @param [String] attr_name
+    # @param [Class] cipher_class
+    # @param [Hash] options
+    def write_encrypted_attribute(attr_name, cipher_class, options)
+      value = read_attribute(attr_name.to_sym)
+      return if value.blank? or value.encrypted?
+
+      cipher = instantiate_cipher(cipher_class, options)
+      value = cipher.encrypt(value)
+      value.cipher = cipher
+      send("#{attr_name}=", value)
+    end
+
+    # @param [String] attr_name
+    # @param [Class] cipher_class
+    # @param [Hash] options
+    # @return [String]
+    def read_encrypted_attribute(attr_name, cipher_class, options)
+      value = read_attribute(attr_name)
+
+      unless value.blank? || value.encrypted? || attribute_changed?(attr_name) || new_record?
+        value.cipher = instantiate_cipher(cipher_class, options)
       end
 
-      private
+      value
+    end
 
-      # @param [String] attr_name
-      # @param [Class] cipher_class
-      # @param [Hash] options
-      def write_encrypted_attribute(attr_name, cipher_class, options)
-        value = read_attribute(attr_name.to_sym)
-        return if value.blank? or value.encrypted?
-
-        cipher = instantiate_cipher(cipher_class, options)
-        value = cipher.encrypt(value)
-        value.cipher = cipher
-        send("#{attr_name}=", value)
-      end
-
-      # @param [String] attr_name
-      # @param [Class] cipher_class
-      # @param [Hash] options
-      # @return [String]
-      def read_encrypted_attribute(attr_name, cipher_class, options)
-        value = read_attribute(attr_name)
-
-        unless value.blank? || value.encrypted? || attribute_changed?(attr_name) || new_record?
-          value.cipher = instantiate_cipher(cipher_class, options)
-        end
-
-        value
-      end
-
-      # @param [Class] cipher_class
-      # @param [Hash] options
-      # @return [EncryptedStrings::Cipher]
-      def instantiate_cipher(cipher_class, options)
-        cipher_class.new(options.dup)
-      end
+    # @param [Class] cipher_class
+    # @param [Hash] options
+    # @return [EncryptedStrings::Cipher]
+    def instantiate_cipher(cipher_class, options)
+      cipher_class.new(options.dup)
     end
   end
 
