@@ -47,8 +47,8 @@ module Mongoid #:nodoc:
     # @param [Class] cipher_class
     # @param [Hash] options
     def write_encrypted_attribute(attr_name, cipher_class, options)
-      value = read_attribute(attr_name.to_sym)
-      return if value.blank? or value.encrypted?
+      value = read_encrypted_attribute(attr_name.to_sym, cipher_class, options)
+      return if value.blank? || value.encrypted?
 
       cipher = instantiate_cipher(cipher_class, options)
       value = cipher.encrypt(value)
